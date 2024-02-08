@@ -2,15 +2,41 @@ const CURRENCIES = ['$', '€'];
 
 // Existing selectors, subject to change
 const CURRENT_SELECTED_JOB = '.jobs-search-results-list__list-item--active';
-const JOB_ENTRY_ELEMENT = {
-	// Job search
-	jobSearch: '.jobs-search-results-list li',
-	// Job lists, such as "Top job picks for you"
-	jobList: '.reusable-search__entity-result-list li',
-	// Saved jobs
-	savedJobs: '.reusable-search__result-container li',
+const JOB_ENTRY_ELEMENT = 'main ul li';
+const JOB_DETAIL_ELEMENT = `${JOB_ENTRY_ELEMENT} ul li`;
+
+// Gets selector that selects child elements of a type, or the parent when that type is not present
+const getChildOrParent = (baseSelector, withAndWithout) =>
+	[
+		`${baseSelector} ${withAndWithout}`,
+		`${baseSelector}:not(:has(${withAndWithout}))`,
+	].join(',');
+
+const pageTypes = {
+	recommended: 'RECOMMENDED',
+	saved: 'SAVED',
+	search: 'SEARCH',
+	topApplicant: 'TOP_APPLICANT',
 };
-const ALL_JOB_LISTS = Object.values(JOB_ENTRY_ELEMENT).join(',');
+
+const COUNTRY_ELEMENTS = {
+	[pageTypes.recommended]: `${JOB_DETAIL_ELEMENT}`,
+	[pageTypes.saved]: '.entity-result__secondary-subtitle',
+	[pageTypes.search]: `${JOB_DETAIL_ELEMENT}`,
+	[pageTypes.topApplicant]: `${JOB_DETAIL_ELEMENT}`,
+};
+
+const TIME_ELEMENTS = {
+	// Not currently in the UI on this page
+	[pageTypes.recommended]: null,
+	[pageTypes.saved]: getChildOrParent(
+		'main ul li.reusable-search__result-container .workflow-posted-jobs__jobs-insight',
+		'.reusable-search-simple-insight--subsequent',
+	),
+	// Not currently in the UI on this page
+	[pageTypes.search]: null,
+	[pageTypes.topApplicant]: `${JOB_DETAIL_ELEMENT}`,
+};
 
 // Custom classes that this script adds
 const SALARY_CLASS = 'z-salary';
@@ -24,6 +50,14 @@ const timeToStyle = {
 	day: '#0097A7',
 	week: '#4527A0',
 	month: '#B71C1C',
+};
+
+const abbreviatedTimeToStyle = {
+	m: 'minute',
+	h: 'hour',
+	d: 'day',
+	w: 'week',
+	mo: 'month',
 };
 
 const countryToFlag = {
@@ -105,11 +139,29 @@ const createStyleSheet = () => {
 
 const timeStyling = (element) => {
 	if (/\bago/.test(element.innerText)) {
+		let stylingApplied = false;
 		Object.keys(timeToStyle).forEach((time) => {
-			if (element.innerText.includes(time)) {
+			if (!stylingApplied && element.innerText.includes(time)) {
 				element.classList.add(`z-${time}`);
+				stylingApplied = true;
 			}
 		});
+		// There are 2 formats...
+		if (!stylingApplied && /\d\w+/.test(element.innerText)) {
+			// TODO handle "Easy Apply" in the same element text
+			let text = element.innerText;
+			text = text.substring(text.length - 6, text.length - 4);
+			text = /\D+/.exec(text)[0];
+			element.classList.add(`z-${abbreviatedTimeToStyle[text]}`);
+		}
+	}
+};
+
+const jobTypeStyling = (element) => {
+	if (element.innerText.includes('(Hybrid)')) {
+		element.classList.add(HYBRID_CLASS);
+	} else if (element.innerText.includes('(Remote)')) {
+		element.classList.add(REMOTE_CLASS);
 	}
 };
 
@@ -124,37 +176,60 @@ const countryStyling = (element) => {
 	});
 };
 
+const contractStyling = (element) => {
+	if (element.innerText.includes('contract')) {
+		element.classList.add(CONTRACT_CLASS);
+	}
+};
+
+const currencyStyling = (element) => {
+	CURRENCIES.forEach((currency) => {
+		if (
+			!element.classList.contains(SALARY_CLASS) &&
+			element.innerText.includes(currency)
+		)
+			element.classList.add(SALARY_CLASS);
+	});
+};
+
 // TODO current selected job highlighting
 const applyStyling = () => {
-	document.querySelectorAll(ALL_JOB_LISTS).forEach((jobData) => {
+	document.querySelectorAll(JOB_ENTRY_ELEMENT).forEach((jobData) => {
 		// Location types
-		if (jobData.innerText.includes('(Hybrid)')) {
-			jobData.classList.add(HYBRID_CLASS);
-		} else if (jobData.innerText.includes('(Remote)')) {
-			jobData.classList.add(REMOTE_CLASS);
-		}
-
+		jobTypeStyling(jobData);
 		// Contract roles
-		if (jobData.innerText.includes('contract')) {
-			jobData.classList.add(CONTRACT_CLASS);
-		}
-		jobData.querySelectorAll('li').forEach((innerEl) => {
-			// Salary
-			CURRENCIES.forEach((currency) => {
-				if (
-					!innerEl.classList.contains(SALARY_CLASS) &&
-					innerEl.innerText.includes(currency)
-				)
-					innerEl.classList.add(SALARY_CLASS);
-			});
-
-			// Time since posting
-			timeStyling(innerEl);
-		});
+		contractStyling(jobData);
 	});
 
-	// Specific to saved jobs
-	// document.querySelectorAll(JOB_ENTRY_ELEMENT.savedJobs);
+	let listType = '';
+	if (
+		/linkedin.com\/jobs\/collections\/recommended\//.test(window.location.href)
+	) {
+		listType = pageTypes.recommended;
+	} else if (
+		/linkedin.com\/my-items\/saved-jobs\//.test(window.location.href)
+	) {
+		listType = pageTypes.saved;
+	} else if (/linkedin.com\/jobs\/search\//.test(window.location.href)) {
+		listType = pageTypes.search;
+	} else if (
+		/linkedin.com\/jobs\/collections\/top-applicant\//.test(
+			window.location.href,
+		)
+	) {
+		listType = pageTypes.topApplicant;
+	}
+
+	if (listType) {
+		// Country flags
+		document
+			.querySelectorAll(COUNTRY_ELEMENTS[listType])
+			.forEach(countryStyling);
+		// Time since posting
+		document.querySelectorAll(TIME_ELEMENTS[listType]).forEach(timeStyling);
+		// Salaries
+	}
+	document.querySelectorAll(JOB_DETAIL_ELEMENT).forEach(currencyStyling);
 };
 
 createStyleSheet();
