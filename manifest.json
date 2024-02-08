@@ -1,0 +1,28 @@
+{
+  "background": {
+    "scripts": [
+      "zander.js"
+    ]
+  },
+  "content_scripts": [
+    {
+      "js": [
+        "zander_style_jobs.js"
+      ],
+      "matches": [
+        "https://www.linkedin.com/jobs/*",
+        "https://www.linkedin.com/my-items/saved-jobs/*"
+      ]
+    }
+  ],
+  "manifest_version": 2,
+  "name": "webRequest-demo",
+  "permissions": [
+    "activeTab",
+    "webRequest",
+    "webRequestBlocking",
+    "webRequestFilterResponse",
+    "https://*.linkedin.com/voyager/api/jobs/jobPostings/*"
+  ],
+  "version": "1.0"
+}

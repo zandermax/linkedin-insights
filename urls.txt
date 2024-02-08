@@ -1,0 +1,22 @@
+- https://www.linkedin.com/jobs/search/
+  - Basic job search
+  - Params:
+    - keywords -> Search terms
+    - location -> Location name
+    - geoId -> Location ID (not sure if this is needed due to `location` param)
+
+Collections
+- https://www.linkedin.com/jobs/collections/recommended/
+  - "Top job picks for you"
+  - ** Does not show post time
+- https://www.linkedin.com/jobs/collections/similar-jobs/
+  - "Similar jobs"
+  - ** Requires `referenceJobId` param
+- https://www.linkedin.com/jobs/collections/top-applicant/
+  - "Premium: jobs where you'd be a top applicant"
+
+
+---
+
+- Old job (no longer active)
+  - https://www.linkedin.com/jobs/view/3789328523/
