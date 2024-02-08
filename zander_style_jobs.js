@@ -150,8 +150,7 @@ const timeStyling = (element) => {
 		if (!stylingApplied && /\d\w+/.test(element.innerText)) {
 			// TODO handle "Easy Apply" in the same element text
 			let text = element.innerText;
-			text = text.substring(text.length - 6, text.length - 4);
-			text = /\D+/.exec(text)[0];
+			text = text.substring('Posted '.length + 1, text.indexOf(' ago'));
 			element.classList.add(`z-${abbreviatedTimeToStyle[text]}`);
 		}
 	}
